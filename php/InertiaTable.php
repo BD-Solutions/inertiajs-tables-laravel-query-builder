@@ -147,7 +147,12 @@ class InertiaTable
 
             'filters'           => $this->transformFilters(),
             'hasFilters'        => $this->filters->isNotEmpty(),
-            'hasEnabledFilters' => $this->filters->filter->value->isNotEmpty(),
+            'hasEnabledFilters' => $this->filters->filter(function (Filter $f) {
+                if (is_array($f->value)) {
+                    return collect($f->value)->filter()->isNotEmpty();
+                }
+                return !empty($f->value);
+            })->isNotEmpty(),
 
             'searchInputs'                => $searchInputs              = $this->transformSearchInputs(),
             'searchInputsWithoutGlobal'   => $searchInputsWithoutGlobal = $searchInputs->where('key', '!=', 'global'),
@@ -329,6 +334,114 @@ class InertiaTable
             noFilterOption: $noFilterOption,
             noFilterOptionLabel: $noFilterOptionLabel ?: '-',
             type: 'select'
+        ))->values();
+
+        return $this;
+    }
+
+    /**
+     * Add a boolean filter (tri-state: null / "1" / "0").
+     *
+     * @param string $key
+     * @param string|null $label
+     * @param bool|null $defaultValue
+     * @return self
+     */
+    public function booleanFilter(string $key, string $label = null, ?bool $defaultValue = null): self
+    {
+        $this->filters = $this->filters->reject(function (Filter $filter) use ($key) {
+            return $filter->key === $key;
+        })->push(new Filter(
+            key: $key,
+            label: $label ?: Str::headline($key),
+            options: [],
+            value: $defaultValue !== null ? ($defaultValue ? '1' : '0') : null,
+            noFilterOption: false,
+            noFilterOptionLabel: '',
+            type: 'boolean'
+        ))->values();
+
+        return $this;
+    }
+
+    /**
+     * Add a single-date filter.
+     *
+     * @param string $key
+     * @param string|null $label
+     * @param string|null $defaultValue  ISO date string (Y-m-d)
+     * @return self
+     */
+    public function dateFilter(string $key, string $label = null, string $defaultValue = null): self
+    {
+        $this->filters = $this->filters->reject(function (Filter $filter) use ($key) {
+            return $filter->key === $key;
+        })->push(new Filter(
+            key: $key,
+            label: $label ?: Str::headline($key),
+            options: [],
+            value: $defaultValue,
+            noFilterOption: false,
+            noFilterOptionLabel: '',
+            type: 'date'
+        ))->values();
+
+        return $this;
+    }
+
+    /**
+     * Add a date-range filter. Passed to the backend as filter[key][from] and filter[key][to].
+     *
+     * @param string $key
+     * @param string|null $label
+     * @param string|null $defaultFrom  ISO date string (Y-m-d)
+     * @param string|null $defaultTo    ISO date string (Y-m-d)
+     * @return self
+     */
+    public function dateRangeFilter(string $key, string $label = null, string $defaultFrom = null, string $defaultTo = null): self
+    {
+        $defaultValue = ($defaultFrom || $defaultTo)
+            ? ['from' => $defaultFrom, 'to' => $defaultTo]
+            : null;
+
+        $this->filters = $this->filters->reject(function (Filter $filter) use ($key) {
+            return $filter->key === $key;
+        })->push(new Filter(
+            key: $key,
+            label: $label ?: Str::headline($key),
+            options: [],
+            value: $defaultValue,
+            noFilterOption: false,
+            noFilterOptionLabel: '',
+            type: 'date-range'
+        ))->values();
+
+        return $this;
+    }
+
+    /**
+     * Add a searchable multi-select filter. Passes an array to the backend.
+     *
+     * @param string $key
+     * @param array $options
+     * @param string|null $label
+     * @param array|null $defaultValue
+     * @param bool $noFilterOption
+     * @param string|null $noFilterOptionLabel
+     * @return self
+     */
+    public function multiSelectFilter(string $key, array $options, string $label = null, array $defaultValue = null, bool $noFilterOption = false, string $noFilterOptionLabel = null): self
+    {
+        $this->filters = $this->filters->reject(function (Filter $filter) use ($key) {
+            return $filter->key === $key;
+        })->push(new Filter(
+            key: $key,
+            label: $label ?: Str::headline($key),
+            options: $options,
+            value: $defaultValue,
+            noFilterOption: $noFilterOption,
+            noFilterOptionLabel: $noFilterOptionLabel ?: '-',
+            type: 'multiselect'
         ))->values();
 
         return $this;

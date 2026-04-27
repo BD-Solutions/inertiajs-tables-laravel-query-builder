@@ -248,6 +248,12 @@ const props = defineProps({
         required: false,
     },
 
+    persistFilters: {
+        type: Boolean,
+        default: false,
+        required: false,
+    },
+
     resource: {
         type: Object,
         default: () => {
@@ -489,10 +495,12 @@ function getFilterForQuery() {
         }
     });
 
-    forEach(queryBuilderData.value.filters, (filters) => {
-        if (filters.value !== null) {
-            filtersWithValue[filters.key] = filters.value;
-        }
+    forEach(queryBuilderData.value.filters, (filter) => {
+        const val = filter.value;
+        if (val === null || val === undefined) return;
+        if (Array.isArray(val) && val.length === 0) return;
+        if (!Array.isArray(val) && typeof val === "object" && !Object.values(val).some(Boolean)) return;
+        filtersWithValue[filter.key] = val;
     });
 
     return filtersWithValue;
@@ -578,6 +586,9 @@ function generateNewQueryString() {
 
     let query = qs.stringify(queryStringData, {
         filter(prefix, value) {
+            if (Array.isArray(value)) {
+                return value.filter(Boolean);
+            }
             if (typeof value === "object" && value !== null) {
                 return pickBy(value);
             }
@@ -639,7 +650,27 @@ function visit(url) {
     );
 }
 
+function storageKey() {
+    return `inertia_table_${props.name}_filters`;
+}
+
+function saveFiltersToStorage() {
+    if (!props.persistFilters) return;
+    const values = {};
+    forEach(queryBuilderData.value.filters, (f) => {
+        if (f.value !== null && f.value !== undefined) {
+            values[f.key] = f.value;
+        }
+    });
+    if (Object.keys(values).length > 0) {
+        try { localStorage.setItem(storageKey(), JSON.stringify(values)); } catch (_) {}
+    } else {
+        try { localStorage.removeItem(storageKey()); } catch (_) {}
+    }
+}
+
 watch(queryBuilderData, () => {
+    saveFiltersToStorage();
     visit(location.pathname + "?" +  generateNewQueryString());
 }, { deep: true });
 
@@ -649,6 +680,26 @@ const inertiaListener = () => {
 
 onMounted(() => {
     document.addEventListener("inertia:success", inertiaListener);
+
+    if (props.persistFilters) {
+        const prefix = props.name === "default" ? "" : `${props.name}_`;
+        const hasUrlFilters = Boolean(qs.parse(location.search.substring(1))[`${prefix}filter`]);
+
+        if (!hasUrlFilters) {
+            try {
+                const stored = localStorage.getItem(storageKey());
+                if (stored) {
+                    const savedFilters = JSON.parse(stored);
+                    forEach(savedFilters, (value, key) => {
+                        const intKey = findDataKey("filters", key);
+                        if (intKey !== undefined) {
+                            queryBuilderData.value.filters[intKey].value = value;
+                        }
+                    });
+                }
+            } catch (_) {}
+        }
+    }
 });
 
 onUnmounted(() => {

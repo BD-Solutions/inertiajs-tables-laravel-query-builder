@@ -27,31 +27,148 @@
       role="menu"
       aria-orientation="horizontal"
       aria-labelledby="filter-menu"
-      class="min-w-max"
+      class="min-w-[16rem] max-w-xs"
     >
       <div
         v-for="(filter, key) in filters"
         :key="key"
+        class="border-b border-gray-100 last:border-0"
       >
-        <h3 class="text-xs uppercase tracking-wide bg-gray-100 p-3">
+        <h3 class="flex items-center bg-gray-50 px-3 py-2 text-xs font-medium uppercase tracking-wide text-gray-600">
           {{ filter.label }}
+          <span
+            v-if="isFilterActive(filter)"
+            class="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-green-500"
+          />
         </h3>
-        <div class="p-2">
+
+        <!-- ── SELECT with optional search ─────────────────────────── -->
+        <div
+          v-if="filter.type === 'select'"
+          class="p-2"
+        >
+          <input
+            v-if="optionCount(filter) > 7"
+            type="text"
+            :placeholder="`Search ${filter.label}…`"
+            :value="searchTerms[filter.key] || ''"
+            class="mb-1.5 block w-full rounded border-gray-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            @input="searchTerms[filter.key] = $event.target.value"
+          />
           <select
-            v-if="filter.type === 'select'"
             :name="filter.key"
             :value="filter.value"
-            class="block focus:ring-indigo-500 focus:border-indigo-500 w-full shadow-sm text-sm border-gray-300 rounded-md"
-            @change="onFilterChange(filter.key, $event.target.value)"
+            class="block w-full rounded border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            @change="onFilterChange(filter.key, $event.target.value || null)"
           >
             <option
-              v-for="(option, optionKey) in filter.options"
-              :key="optionKey"
-              :value="optionKey"
+              v-for="(label, val) in filteredOptions(filter)"
+              :key="val"
+              :value="val"
             >
-              {{ option }}
+              {{ label }}
             </option>
           </select>
+        </div>
+
+        <!-- ── MULTI-SELECT with checkboxes + optional search ─────── -->
+        <div
+          v-else-if="filter.type === 'multiselect'"
+          class="p-2"
+        >
+          <input
+            v-if="optionCount(filter) > 5"
+            type="text"
+            :placeholder="`Search ${filter.label}…`"
+            :value="searchTerms[filter.key] || ''"
+            class="mb-2 block w-full rounded border-gray-300 text-xs shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            @input="searchTerms[filter.key] = $event.target.value"
+          />
+          <div class="max-h-44 overflow-y-auto space-y-0.5">
+            <label
+              v-for="(label, val) in filteredOptions(filter)"
+              :key="val"
+              class="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm text-gray-700 hover:bg-gray-50"
+            >
+              <input
+                type="checkbox"
+                :value="val"
+                :checked="isMultiSelected(filter, val)"
+                class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                @change="toggleMultiSelect(filter.key, filter.value, val, $event.target.checked)"
+              />
+              {{ label }}
+            </label>
+          </div>
+          <div
+            v-if="Array.isArray(filter.value) && filter.value.length > 0"
+            class="mt-1 border-t border-gray-100 pt-1"
+          >
+            <button
+              class="text-xs text-gray-400 hover:text-gray-600"
+              @click="onFilterChange(filter.key, null)"
+            >
+              Clear selection
+            </button>
+          </div>
+        </div>
+
+        <!-- ── BOOLEAN tri-state: Any / Yes / No ─────────────────── -->
+        <div
+          v-else-if="filter.type === 'boolean'"
+          class="p-2"
+        >
+          <div class="flex overflow-hidden rounded-md border border-gray-300">
+            <button
+              v-for="opt in booleanOptions"
+              :key="String(opt.val)"
+              class="flex-1 px-2 py-1 text-xs font-medium transition-colors"
+              :class="filter.value === opt.val
+                ? 'bg-indigo-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-50'"
+              @click="onFilterChange(filter.key, opt.val)"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- ── DATE single ─────────────────────────────────────────── -->
+        <div
+          v-else-if="filter.type === 'date'"
+          class="p-2"
+        >
+          <input
+            type="date"
+            :value="filter.value || ''"
+            class="block w-full rounded border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            @change="onFilterChange(filter.key, $event.target.value || null)"
+          />
+        </div>
+
+        <!-- ── DATE RANGE ──────────────────────────────────────────── -->
+        <div
+          v-else-if="filter.type === 'date-range'"
+          class="space-y-2 p-2"
+        >
+          <div>
+            <label class="mb-0.5 block text-xs text-gray-500">From</label>
+            <input
+              type="date"
+              :value="filter.value && filter.value.from ? filter.value.from : ''"
+              class="block w-full rounded border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              @change="onDateRangeChange(filter.key, filter.value, 'from', $event.target.value)"
+            />
+          </div>
+          <div>
+            <label class="mb-0.5 block text-xs text-gray-500">To</label>
+            <input
+              type="date"
+              :value="filter.value && filter.value.to ? filter.value.to : ''"
+              class="block w-full rounded border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              @change="onDateRangeChange(filter.key, filter.value, 'to', $event.target.value)"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -59,9 +176,10 @@
 </template>
 
 <script setup>
+import { ref } from "vue";
 import ButtonWithDropdown from "./ButtonWithDropdown.vue";
 
-defineProps({
+const props = defineProps({
     hasEnabledFilters: {
         type: Boolean,
         required: true,
@@ -77,5 +195,59 @@ defineProps({
         required: true,
     },
 });
-</script>
 
+const searchTerms = ref({});
+
+const booleanOptions = [
+    { val: null, label: "Any" },
+    { val: "1",  label: "Yes" },
+    { val: "0",  label: "No" },
+];
+
+function optionCount(filter) {
+    return Object.keys(filter.options || {}).length;
+}
+
+function filteredOptions(filter) {
+    const term = (searchTerms.value[filter.key] || "").toLowerCase();
+    if (!term) return filter.options;
+    return Object.fromEntries(
+        Object.entries(filter.options).filter(([, label]) =>
+            String(label).toLowerCase().includes(term)
+        )
+    );
+}
+
+function isMultiSelected(filter, val) {
+    return Array.isArray(filter.value) && filter.value.map(String).includes(String(val));
+}
+
+function isFilterActive(filter) {
+    const v = filter.value;
+    if (v === null || v === undefined || v === "") return false;
+    if (Array.isArray(v)) return v.length > 0;
+    if (typeof v === "object") return Object.values(v).some(Boolean);
+    return true;
+}
+
+function toggleMultiSelect(key, currentValue, val, checked) {
+    const current = Array.isArray(currentValue) ? currentValue.map(String) : [];
+    const strVal = String(val);
+
+    const updated = checked
+        ? [...new Set([...current, strVal])]
+        : current.filter((v) => v !== strVal);
+
+    props.onFilterChange(key, updated.length > 0 ? updated : null);
+}
+
+function onDateRangeChange(key, currentValue, field, rawValue) {
+    const updated = {
+        from: currentValue?.from || null,
+        to:   currentValue?.to   || null,
+        [field]: rawValue || null,
+    };
+    const hasAny = updated.from || updated.to;
+    props.onFilterChange(key, hasAny ? updated : null);
+}
+</script>
