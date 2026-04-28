@@ -27,22 +27,28 @@
       role="menu"
       aria-orientation="horizontal"
       aria-labelledby="filter-menu"
-      class="max-h-[min(32rem,calc(100vh-7rem))] w-[22rem] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain p-2"
+      class="max-h-[min(30rem,calc(100vh-8rem))] w-80 max-w-[calc(100vw-3rem)] overflow-y-auto overscroll-contain rounded-xl p-1.5"
     >
-      <div
-        v-for="(filter, key) in filters"
+      <details
+        v-for="(filter, key) in visibleFilters"
         :key="key"
-        class="mb-2 overflow-hidden rounded-lg border border-gray-100 bg-white last:mb-0"
+        class="group mb-1.5 overflow-hidden rounded-lg border border-gray-100 bg-white last:mb-0"
+        :open="isFilterActive(filter)"
       >
-        <h3 class="flex items-center justify-between bg-gray-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 bg-gray-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600 marker:hidden hover:bg-gray-100">
           <span>{{ filter.label }}</span>
-          <span
-            v-if="isFilterActive(filter)"
-            class="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700"
-          >
-            Attivo
+          <span class="flex items-center gap-2">
+            <span
+              v-if="isFilterActive(filter)"
+              class="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700"
+            >
+              Attivo
+            </span>
+            <svg class="h-3.5 w-3.5 text-gray-400 transition group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+            </svg>
           </span>
-        </h3>
+        </summary>
 
         <div
           v-if="filter.type === 'select'"
@@ -85,12 +91,12 @@
           >
           <div
             v-if="filteredOptionCount(filter) > 0"
-            class="max-h-40 space-y-1 overflow-y-auto pr-1"
+            class="max-h-32 space-y-0.5 overflow-y-auto pr-1"
           >
             <label
               v-for="(label, val) in filteredOptions(filter)"
               :key="val"
-              class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                class="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm text-gray-700 hover:bg-gray-50"
             >
               <input
                 type="checkbox"
@@ -169,7 +175,7 @@
           v-else-if="filter.type === 'date-range'"
           class="space-y-3 p-3"
         >
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="mb-1 block text-xs font-medium text-gray-500">Da</label>
               <input
@@ -198,13 +204,13 @@
             Cancella date
           </button>
         </div>
-      </div>
+      </details>
     </div>
   </ButtonWithDropdown>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import ButtonWithDropdown from "./ButtonWithDropdown.vue";
 
 const props = defineProps({
@@ -231,6 +237,18 @@ const booleanOptions = [
     { val: "1", label: "Si" },
     { val: "0", label: "No" },
 ];
+
+const visibleFilters = computed(() => {
+    return Object.fromEntries(
+        Object.entries(props.filters).filter(([, filter]) => {
+            if (["select", "multiselect"].includes(filter.type)) {
+                return optionCount(filter) > 0;
+            }
+
+            return true;
+        })
+    );
+});
 
 function optionCount(filter) {
     return Object.keys(filter.options || {}).length;
