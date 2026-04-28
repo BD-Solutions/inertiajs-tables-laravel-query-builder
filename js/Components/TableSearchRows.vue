@@ -65,7 +65,7 @@
 
 <script setup>
 import { computed, ref, watch, nextTick } from "vue";
-import find from "lodash-es/find";
+import find from "lodash-es/find.js";
 
 const skipUnwrap = { el: ref([]) };
 let el = computed(() => skipUnwrap.el.value);
@@ -114,4 +114,3 @@ watch(props.forcedVisibleSearchInputs, (inputs) => {
     });
 }, { immediate: true });
 </script>
-

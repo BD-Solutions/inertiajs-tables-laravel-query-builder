@@ -29,9 +29,9 @@
 
 <script setup>
 import OnClickOutside from "./OnClickOutside.vue";
-import { createPopper } from "@popperjs/core/lib/popper-lite";
-import preventOverflow from "@popperjs/core/lib/modifiers/preventOverflow";
-import flip from "@popperjs/core/lib/modifiers/flip";
+import { createPopper } from "@popperjs/core/lib/popper-lite.js";
+import preventOverflow from "@popperjs/core/lib/modifiers/preventOverflow.js";
+import flip from "@popperjs/core/lib/modifiers/flip.js";
 import { ref, watch, onMounted } from "vue";
 
 const props = defineProps({
