@@ -663,9 +663,17 @@ function saveFiltersToStorage() {
         }
     });
     if (Object.keys(values).length > 0) {
-        try { localStorage.setItem(storageKey(), JSON.stringify(values)); } catch (_) {}
+        try {
+            localStorage.setItem(storageKey(), JSON.stringify(values));
+        } catch (_) {
+            // localStorage can be unavailable in private browsing or restricted contexts.
+        }
     } else {
-        try { localStorage.removeItem(storageKey()); } catch (_) {}
+        try {
+            localStorage.removeItem(storageKey());
+        } catch (_) {
+            // localStorage can be unavailable in private browsing or restricted contexts.
+        }
     }
 }
 
@@ -697,7 +705,9 @@ onMounted(() => {
                         }
                     });
                 }
-            } catch (_) {}
+            } catch (_) {
+                // Ignore invalid or inaccessible persisted filter state.
+            }
         }
     }
 });
