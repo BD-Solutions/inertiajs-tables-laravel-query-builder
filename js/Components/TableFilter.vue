@@ -27,20 +27,20 @@
       role="menu"
       aria-orientation="horizontal"
       aria-labelledby="filter-menu"
-      class="w-72 max-w-[calc(100vw-2rem)] overflow-hidden"
+      class="max-h-[min(32rem,calc(100vh-7rem))] w-[22rem] max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain p-2"
     >
       <div
         v-for="(filter, key) in filters"
         :key="key"
-        class="border-b border-gray-100 last:border-0"
+        class="mb-2 overflow-hidden rounded-lg border border-gray-100 bg-white last:mb-0"
       >
-        <h3 class="flex items-center justify-between bg-gray-50 px-3 py-2 text-xs font-medium uppercase tracking-wide text-gray-600">
+        <h3 class="flex items-center justify-between bg-gray-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-600">
           <span>{{ filter.label }}</span>
           <span
             v-if="isFilterActive(filter)"
             class="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700"
           >
-            Active
+            Attivo
           </span>
         </h3>
 
@@ -51,7 +51,7 @@
           <input
             v-if="optionCount(filter) > 7"
             type="text"
-            :placeholder="`Search ${filter.label}...`"
+            :placeholder="`Cerca ${filter.label}...`"
             :value="searchTerms[filter.key] || ''"
             class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             @input="searchTerms[filter.key] = $event.target.value"
@@ -77,16 +77,15 @@
           class="space-y-2 p-3"
         >
           <input
-            v-if="optionCount(filter) > 5"
             type="text"
-            :placeholder="`Search ${filter.label}...`"
+            :placeholder="`Cerca ${filter.label}...`"
             :value="searchTerms[filter.key] || ''"
             class="block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             @input="searchTerms[filter.key] = $event.target.value"
           >
           <div
             v-if="filteredOptionCount(filter) > 0"
-            class="max-h-48 space-y-1 overflow-y-auto pr-1"
+            class="max-h-40 space-y-1 overflow-y-auto pr-1"
           >
             <label
               v-for="(label, val) in filteredOptions(filter)"
@@ -107,21 +106,21 @@
             v-else
             class="rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-500"
           >
-            {{ optionCount(filter) > 0 ? 'No matching options.' : 'No options available.' }}
+            {{ optionCount(filter) > 0 ? 'Nessuna opzione trovata.' : 'Nessuna opzione disponibile.' }}
           </p>
           <div
             v-if="Array.isArray(filter.value) && filter.value.length > 0"
             class="flex items-center justify-between border-t border-gray-100 pt-2"
           >
             <span class="text-xs text-gray-500">
-              {{ filter.value.length }} selected
+              {{ filter.value.length }} selezionati
             </span>
             <button
               type="button"
               class="text-xs font-medium text-indigo-600 hover:text-indigo-800"
               @click="onFilterChange(filter.key, null)"
             >
-              Clear
+              Cancella
             </button>
           </div>
         </div>
@@ -172,7 +171,7 @@
         >
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label class="mb-1 block text-xs font-medium text-gray-500">From</label>
+              <label class="mb-1 block text-xs font-medium text-gray-500">Da</label>
               <input
                 type="date"
                 :value="filter.value && filter.value.from ? filter.value.from : ''"
@@ -181,7 +180,7 @@
               >
             </div>
             <div>
-              <label class="mb-1 block text-xs font-medium text-gray-500">To</label>
+              <label class="mb-1 block text-xs font-medium text-gray-500">A</label>
               <input
                 type="date"
                 :value="filter.value && filter.value.to ? filter.value.to : ''"
@@ -196,7 +195,7 @@
             class="text-xs font-medium text-indigo-600 hover:text-indigo-800"
             @click="onFilterChange(filter.key, null)"
           >
-            Clear dates
+            Cancella date
           </button>
         </div>
       </div>
@@ -228,8 +227,8 @@ const props = defineProps({
 const searchTerms = ref({});
 
 const booleanOptions = [
-    { val: null, label: "Any" },
-    { val: "1", label: "Yes" },
+    { val: null, label: "Tutti" },
+    { val: "1", label: "Si" },
     { val: "0", label: "No" },
 ];
 

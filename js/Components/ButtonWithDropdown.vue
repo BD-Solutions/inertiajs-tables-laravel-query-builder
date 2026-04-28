@@ -81,7 +81,10 @@ const tooltip = ref(null);
 onMounted(() => {
     popper.value = createPopper(button.value, tooltip.value, {
         placement: props.placement,
-        modifiers: [flip, preventOverflow],
+        modifiers: [
+            { ...flip, options: { padding: 12 } },
+            { ...preventOverflow, options: { padding: 12 } },
+        ],
     });
 });
 
